@@ -1,4 +1,4 @@
-package twilliate
+package internal
 
 import (
 	"context"

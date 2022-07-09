@@ -1,4 +1,4 @@
-module github.com/twilliate/twilliate-provider-aws
+module github.com/twilliate/terraform-provider-twilliate
 
 go 1.16
 
