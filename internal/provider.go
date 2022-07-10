@@ -61,7 +61,8 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 // GetResources - Defines provider resources
 func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
-		"twilliate_cloudfront_origin": OriginResourceType{},
+		"twilliate_cloudfront_origin":          OriginResourceType{},
+		"twilliate_cloudfront_cache_behaviour": CacheBehaviourResourceType{},
 	}, nil
 }
 

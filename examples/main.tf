@@ -70,7 +70,7 @@ resource "aws_s3_object" "origin_bucket_objects" {
 #-----------------------------------------------------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
-  comment = "access identity used for the default behaviour(no registered services)"
+  comment = "OAI for the dev.twilliate.de impressum"
 }
 
 data "aws_iam_policy_document" "origin_bucket_oai_policy" {
@@ -94,5 +94,17 @@ resource "twilliate_cloudfront_origin" "twilaw_cloudfront_origin" {
   distribution_id = "E23U75UVB2F6PU"
   origin_id = "impressum"
   origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.id
-  origin_domain = aws_s3_bucket.origin_bucket.bucket_domain_name
+  origin_domain = aws_s3_bucket.origin_bucket.bucket_regional_domain_name
+}
+
+data "aws_cloudfront_cache_policy" "optimized_cache_policy" {
+  name = "Managed-CachingOptimized"
+}
+
+resource "twilliate_cloudfront_cache_behaviour" "twilaw_cloudfront_cache_behaviour" {
+  distribution_id = "E23U75UVB2F6PU"
+  origin_id = twilliate_cloudfront_origin.twilaw_cloudfront_origin.origin_id
+  viewer_protocol_policy = "redirect-to-https"
+  path_pattern = "/impressum*"
+  cache_policy_id = data.aws_cloudfront_cache_policy.optimized_cache_policy.id
 }
