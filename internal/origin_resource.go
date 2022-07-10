@@ -2,11 +2,13 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"golang.org/x/exp/slices"
 )
 
 type OriginResource struct {
@@ -36,20 +38,7 @@ func (o OriginResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 
 	distributionConfig := out.DistributionConfig
 	// Add new Origin to existing configuration
-	distributionConfig.Origins.Items = append(distributionConfig.Origins.Items, types.Origin{
-		DomainName: aws.String(plan.Domain.Value),
-		Id:         aws.String(plan.Id.Value),
-		CustomHeaders: &types.CustomHeaders{
-			Quantity: aws.Int32(0),
-		},
-		OriginPath: aws.String(""),
-		OriginShield: &types.OriginShield{
-			Enabled: aws.Bool(false),
-		},
-		S3OriginConfig: &types.S3OriginConfig{
-			OriginAccessIdentity: aws.String("origin-access-identity/cloudfront/" + plan.AccessIdentity.Value),
-		},
-	})
+	distributionConfig.Origins.Items = append(distributionConfig.Origins.Items, OriginFromResource(plan))
 	*distributionConfig.Origins.Quantity++
 
 	_, err = o.client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
@@ -59,7 +48,7 @@ func (o OriginResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("failed to update distribution", err.Error())
+		resp.Diagnostics.AddError("failed to create origin in distribution", err.Error())
 		return
 	}
 
@@ -95,6 +84,69 @@ func (o OriginResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 // UpdateResourceRequest and new state values set on the
 // UpdateResourceResponse.
 func (o OriginResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	// current state
+	var state Origin
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	// planned state
+	var plan Origin
+	diags = req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	// distribution changed, remove origin from old distribution
+	if state.DistributionId.Value != plan.DistributionId.Value {
+		err := o.deleteFromDistribution(ctx, state)
+		if err != nil {
+			resp.Diagnostics.AddError("failed to remove origin from previous distribution", err.Error())
+		}
+	}
+
+	out, err := o.client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{
+		Id: aws.String(plan.DistributionId.Value),
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get distribution config", err.Error())
+		return
+	}
+
+	distributionConfig := out.DistributionConfig
+
+	idx := slices.IndexFunc(distributionConfig.Origins.Items, func(origin types.Origin) bool {
+		return *origin.Id == state.Id.Value
+	})
+
+	if idx == -1 {
+		distributionConfig.Origins.Items = append(distributionConfig.Origins.Items, OriginFromResource(plan))
+		*distributionConfig.Origins.Quantity++
+	} else {
+		distributionConfig.Origins.Items[idx] = OriginFromResource(plan)
+	}
+
+	_, err = o.client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
+		DistributionConfig: distributionConfig,
+		Id:                 aws.String(plan.DistributionId.Value),
+		IfMatch:            out.ETag,
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("failed to update distribution", err.Error())
+		return
+	}
+
+	resp.State.Set(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete is called when the provider must delete the resource. Config
@@ -104,6 +156,50 @@ func (o OriginResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 // call DeleteResourceResponse.State.RemoveResource(), so it can be omitted
 // from provider logic.
 func (o OriginResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+	var state Origin
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	err := o.deleteFromDistribution(ctx, state)
+
+	if err != nil {
+		resp.Diagnostics.AddError("failed to delete origin from distribution", err.Error())
+		return
+	}
+
+	resp.State.RemoveResource(ctx)
+}
+
+func (o OriginResource) deleteFromDistribution(ctx context.Context, origin Origin) error {
+	out, err := o.client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{
+		Id: aws.String(origin.DistributionId.Value),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	idx := slices.IndexFunc(out.DistributionConfig.Origins.Items, func(o types.Origin) bool {
+		return *o.Id == origin.Id.Value
+	})
+
+	if idx == -1 {
+		return fmt.Errorf("the origin with id %s can not be found, it has been modified or removed", origin.Id)
+	}
+
+	out.DistributionConfig.Origins.Items = append(out.DistributionConfig.Origins.Items[:idx], out.DistributionConfig.Origins.Items[idx+1:]...)
+	*out.DistributionConfig.Origins.Quantity--
+
+	_, err = o.client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
+		DistributionConfig: out.DistributionConfig,
+		Id:                 aws.String(origin.DistributionId.Value),
+		IfMatch:            out.ETag,
+	})
+
+	return err
 }
 
 // Import resource

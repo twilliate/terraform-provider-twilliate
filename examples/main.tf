@@ -12,6 +12,7 @@ terraform {
 }
 
 provider "twilliate" {
+  region = "eu-central-1"
 }
 
 provider "aws" {
@@ -90,8 +91,8 @@ resource "aws_s3_bucket_policy" "bootstrap_cloudfront_bucket_oai_access" {
 
 
 resource "twilliate_cloudfront_origin" "twilaw_cloudfront_origin" {
-  distribution_id = "E2AKAEPJYU3PPW"
-  origin_id = "MyNewOrigin"
+  distribution_id = "E23U75UVB2F6PU"
+  origin_id = "impressum"
   origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.id
   origin_domain = aws_s3_bucket.origin_bucket.bucket_domain_name
 }

@@ -45,7 +45,9 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
-	cfg.Region = "eu-central-1"
+	if !providerConfig.Region.IsNull() {
+		cfg.Region = providerConfig.Region.Value
+	}
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to create aws client", "Cannot get default aws config")
 		return

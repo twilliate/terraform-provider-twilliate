@@ -2,6 +2,8 @@ package internal
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	cloudfrontTypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -49,4 +51,21 @@ func (o OriginResourceType) NewResource(_ context.Context, p tfsdk.Provider) (tf
 	return OriginResource{
 		client: p.(*provider).client,
 	}, nil
+}
+
+func OriginFromResource(origin Origin) cloudfrontTypes.Origin {
+	return cloudfrontTypes.Origin{
+		DomainName: aws.String(origin.Domain.Value),
+		Id:         aws.String(origin.Id.Value),
+		CustomHeaders: &cloudfrontTypes.CustomHeaders{
+			Quantity: aws.Int32(0),
+		},
+		OriginPath: aws.String(""),
+		OriginShield: &cloudfrontTypes.OriginShield{
+			Enabled: aws.Bool(false),
+		},
+		S3OriginConfig: &cloudfrontTypes.S3OriginConfig{
+			OriginAccessIdentity: aws.String("origin-access-identity/cloudfront/" + origin.AccessIdentity.Value),
+		},
+	}
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/twilliate/twilliate-provider-aws/internal"
+	"github.com/twilliate/terraform-provider-twilliate/internal"
 	"log"
 )
 
