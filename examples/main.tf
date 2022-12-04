@@ -91,9 +91,11 @@ resource "aws_s3_bucket_policy" "bootstrap_cloudfront_bucket_oai_access" {
 
 
 resource "twilliate_cloudfront_origin" "twilaw_cloudfront_origin" {
-  distribution_id = "E23U75UVB2F6PU"
+  distribution_id = "E1WO5WCDX9Q7CD"
   origin_id = "impressum"
-  origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.id
+  s3_origin_config = {
+    origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.id
+  }
   origin_domain = aws_s3_bucket.origin_bucket.bucket_regional_domain_name
 }
 
@@ -101,10 +103,10 @@ data "aws_cloudfront_cache_policy" "optimized_cache_policy" {
   name = "Managed-CachingOptimized"
 }
 
-resource "twilliate_cloudfront_cache_behaviour" "twilaw_cloudfront_cache_behaviour" {
-  distribution_id = "E23U75UVB2F6PU"
-  origin_id = twilliate_cloudfront_origin.twilaw_cloudfront_origin.origin_id
-  viewer_protocol_policy = "redirect-to-https"
-  path_pattern = "/impressum*"
-  cache_policy_id = data.aws_cloudfront_cache_policy.optimized_cache_policy.id
-}
+#resource "twilliate_cloudfront_cache_behaviour" "twilaw_cloudfront_cache_behaviour" {
+#  distribution_id = "E1WO5WCDX9Q7CD"
+#  origin_id = twilliate_cloudfront_origin.twilaw_cloudfront_origin.origin_id
+#  viewer_protocol_policy = "redirect-to-https"
+#  path_pattern = "/impressum*"
+#  cache_policy_id = data.aws_cloudfront_cache_policy.optimized_cache_policy.id
+#}
