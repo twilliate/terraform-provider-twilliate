@@ -19,9 +19,16 @@ func toString(value types.String) *string {
 	return aws.String(value.Value)
 }
 
-func toBool(value types.Bool) *bool {
+func toStringOrNil(value types.String) *string {
 	if value.IsNull() {
-		return aws.Bool(false)
+		return nil
+	}
+	return aws.String(value.Value)
+}
+
+func toBool(value types.Bool, defaults bool) *bool {
+	if value.IsNull() {
+		return aws.Bool(defaults)
 	}
 	return aws.Bool(value.Value)
 }

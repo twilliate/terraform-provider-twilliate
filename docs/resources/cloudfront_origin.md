@@ -27,8 +27,62 @@ resource "twilliate_cloudfront_origin" "twilaw_cloudfront_origin" {
 ### Required
 
 - `distribution_id` (String)
-- `origin_access_identity` (String)
 - `origin_domain` (String)
 - `origin_id` (String)
+
+### Optional
+
+- `connection_attempts` (Number)
+- `connection_timeout` (Number)
+- `custom_headers` (Attributes List) (see [below for nested schema](#nestedatt--custom_headers))
+- `custom_origin_config` (Attributes) (see [below for nested schema](#nestedatt--custom_origin_config))
+- `origin_access_control_id` (String)
+- `origin_path` (String)
+- `origin_shield` (Attributes) (see [below for nested schema](#nestedatt--origin_shield))
+- `s3_origin_config` (Attributes) (see [below for nested schema](#nestedatt--s3_origin_config))
+
+<a id="nestedatt--custom_headers"></a>
+### Nested Schema for `custom_headers`
+
+Required:
+
+- `name` (String)
+- `value` (String)
+
+
+<a id="nestedatt--custom_origin_config"></a>
+### Nested Schema for `custom_origin_config`
+
+Required:
+
+- `http_port` (Number)
+- `https_port` (Number)
+- `origin_protocol_policy` (String)
+
+Optional:
+
+- `origin_keep_alive_timeout` (Number)
+- `origin_read_timeout` (Number)
+- `origin_ssl_protocols` (List of String)
+
+
+<a id="nestedatt--origin_shield"></a>
+### Nested Schema for `origin_shield`
+
+Required:
+
+- `enabled` (Boolean)
+
+Optional:
+
+- `origin_shield_region` (String)
+
+
+<a id="nestedatt--s3_origin_config"></a>
+### Nested Schema for `s3_origin_config`
+
+Required:
+
+- `origin_access_identity` (String)
 
 

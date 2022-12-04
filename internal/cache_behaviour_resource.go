@@ -117,6 +117,7 @@ func (c CacheBehaviourResource) Update(ctx context.Context, req tfsdk.UpdateReso
 
 	distributionConfig := out.DistributionConfig
 
+	// TODO: create internal computed id instead of this hack
 	idx := slices.IndexFunc(distributionConfig.CacheBehaviors.Items, func(behaviour types.CacheBehavior) bool {
 		return *behaviour.TargetOriginId == state.OriginId.Value && *behaviour.PathPattern == state.PathPattern.Value
 	})
@@ -180,6 +181,7 @@ func (c CacheBehaviourResource) deleteFromDistribution(ctx context.Context, stat
 		return err
 	}
 
+	// TODO: create internal computed id instead of this hack
 	idx := slices.IndexFunc(out.DistributionConfig.CacheBehaviors.Items, func(behaviour types.CacheBehavior) bool {
 		return *behaviour.TargetOriginId == state.OriginId.Value && *behaviour.PathPattern == state.PathPattern.Value
 	})

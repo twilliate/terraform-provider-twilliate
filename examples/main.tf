@@ -103,10 +103,23 @@ data "aws_cloudfront_cache_policy" "optimized_cache_policy" {
   name = "Managed-CachingOptimized"
 }
 
-#resource "twilliate_cloudfront_cache_behaviour" "twilaw_cloudfront_cache_behaviour" {
-#  distribution_id = "E1WO5WCDX9Q7CD"
-#  origin_id = twilliate_cloudfront_origin.twilaw_cloudfront_origin.origin_id
-#  viewer_protocol_policy = "redirect-to-https"
-#  path_pattern = "/impressum*"
-#  cache_policy_id = data.aws_cloudfront_cache_policy.optimized_cache_policy.id
-#}
+
+resource "aws_cloudfront_function" "resolve_index_html" {
+  code    = file("${path.module}/index.js")
+  name    = "default_resolver_index_html_test"
+  runtime = "cloudfront-js-1.0"
+}
+
+resource "twilliate_cloudfront_cache_behaviour" "twilaw_cloudfront_cache_behaviour" {
+  distribution_id = "E1WO5WCDX9Q7CD"
+  origin_id = twilliate_cloudfront_origin.twilaw_cloudfront_origin.origin_id
+  viewer_protocol_policy = "redirect-to-https"
+  path_pattern = "/impressum*"
+  cache_policy_id = data.aws_cloudfront_cache_policy.optimized_cache_policy.id
+  function_associations = [
+    {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.resolve_index_html.arn
+    }
+  ]
+}

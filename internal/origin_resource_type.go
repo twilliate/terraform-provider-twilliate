@@ -210,7 +210,7 @@ func OriginFromResource(origin Origin) cloudfrontTypes.Origin {
 
 	if origin.OriginShield != nil {
 		originShield = &cloudfrontTypes.OriginShield{
-			Enabled:            toBool(origin.OriginShield.Enabled),
+			Enabled:            toBool(origin.OriginShield.Enabled, false),
 			OriginShieldRegion: toString(origin.OriginShield.OriginShieldRegion),
 		}
 	}
